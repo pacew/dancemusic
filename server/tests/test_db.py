@@ -1,16 +1,37 @@
 import unittest
 import os
 import sys
+import tempfile
+import shutil
 
-# Add the parent directory to the path so we can import server.db
+# Add the parent directory to the path so we can import db
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from db import init_db, create_event, create_tune, update_event, update_tune, soft_delete_event, soft_delete_tune, get_db_connection
 
 class TestDatabase(unittest.TestCase):
     def setUp(self):
+        # Create a temporary database for testing
+        self.temp_dir = tempfile.mkdtemp()
+        self.db_path = os.path.join(self.temp_dir, 'test_database.db')
+        
+        # Patch the database path
+        import db
+        original_connect = db.sqlite3.connect
+        
+        def patched_connect(path, *args, **kwargs):
+            if path == 'database.db':
+                return original_connect(self.db_path, *args, **kwargs)
+            return original_connect(path, *args, **kwargs)
+        
+        db.sqlite3.connect = patched_connect
+        
         # Initialize database for testing
         init_db()
+        
+    def tearDown(self):
+        # Clean up temporary directory
+        shutil.rmtree(self.temp_dir)
         
     def test_create_event(self):
         """Test creating an event with UUID setlist"""
