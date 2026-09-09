@@ -2,3 +2,7 @@ TMP.*
 *~
 ?
 .aider*
+__pycache__/
+
+TMP.prompt.txt
+*.pyc
