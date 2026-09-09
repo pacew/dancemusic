@@ -1,9 +1,11 @@
 import unittest
 import os
 import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from server.db import init_db, create_event, create_tune, update_event, update_tune, soft_delete_event, soft_delete_tune, get_db_connection
+# Add the parent directory to the path so we can import server.db
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from db import init_db, create_event, create_tune, update_event, update_tune, soft_delete_event, soft_delete_tune, get_db_connection
 
 class TestDatabase(unittest.TestCase):
     def setUp(self):
