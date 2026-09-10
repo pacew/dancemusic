@@ -8,3 +8,5 @@ TMP.prompt.txt
 *.pyc
 
 node_modules/
+
+backend/data/
