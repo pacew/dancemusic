@@ -11,10 +11,18 @@ set -e
 #
 # Untracked files count. A leftover server/ from an abandoned run is not
 # tracked and is exactly the thing that must block.
+if [ -n "$(git status --porcelain)" ]; then
+    echo "FATAL: working tree is not clean."
+    echo "Review and commit, or discard, before starting a task. Otherwise this"
+    echo "run's changes and the previous run's are indistinguishable."
+    echo
+    git status --short
+    exit 3
+fi
 
 # 1. Pre-flight dependency check
-if ! command -v pytest >/dev/null 2>&1; then
-    echo "FATAL: Test binary 'pytest' not found in PATH."
+if ! command -v npm >/dev/null 2>&1; then
+    echo "FATAL: Test binary 'npm' not found in PATH."
     echo "It should be system-wide: it is installed by provision/00-base.sh."
     echo "If this box was reloaded, re-provision. If the project needs its own,"
     echo "make a virtualenv for it."
@@ -22,91 +30,27 @@ if ! command -v pytest >/dev/null 2>&1; then
 fi
 
 # 2. Pre-create and track target files to restrict scope
-for file in server/sync.py server/tests/test_sync.py; do
+for file in client/src/db.js client/tests/db.test.js; do
     mkdir -p "$(dirname "$file")"
     touch "$file"
 done
-git add server/sync.py server/tests/test_sync.py
+git add client/src/db.js client/tests/db.test.js
 
 # 3. Generate the prompt
 cat << 'EOF' > TMP.prompt.txt
-# Task: backend_sync (ID: 30)
+# Task: frontend_db (ID: 40)
 
 ## Objective
-Implement LWW synchronization endpoints
+Initialize offline-first IndexedDB schema
 
 ## Acceptance Criteria
-- Accept JSON push for Events/Tunes
-- Resolve conflicts via unconditional Last-Write-Wins using updated_at
-- Process deleted_at tombstones
+- Create Events table matching PRD schema
+- Create Tunes table with transform_data and annotation_data
+- Enforce <1000 record constraint logic
 
 ## Execution Rules
 Execute the objective to meet all acceptance criteria.
 CRITICAL: Do not write a brittle or partial solution. If this task is too broad, output the exact phrase REQUIRE_DECOMPOSITION and stop.
-
-Do not use flask or another web framework.  Instead use bottle.
-
-# Bottle Framework API Contract
-
-Do not read, import, or modify the file server/bottle.py. It is a large vendored dependency. Use this specification to implement routing and JSON handling.
-
-## Core Imports
-
-from bottle import get, post, request, response, run, HTTPResponse
-
-## Routing and URL Parameters
-
-Use method-specific decorators. Path variables are enclosed in angle brackets.
-
-@get('/sync/events')
-def list_events():
-return {"events": []}
-
-@post('/sync/events/<event_id>')
-def update_event(event_id):
-pass
-
-## Reading JSON Payloads
-
-Extract parsed JSON dictionaries using the request.json property.
-
-@post('/sync/tunes')
-def sync_tunes():
-payload = request.json
-if not payload:
-return HTTPResponse(status=400, body="Invalid JSON")
-
-```
-tune_id = payload.get('id')
-return {"status": "merged"}
-
-```
-
-## Returning JSON
-
-Return a standard Python dictionary. Bottle automatically serializes it to a JSON string and sets the Content-Type: application/json header.
-
-@get('/sync/state')
-def get_state():
-return {
-"last_updated": 1700000000,
-"status": "synchronized"
-}
-
-## Error Handling
-
-Return an HTTPResponse object to set specific status codes for client errors or conflicts.
-
-if conflict_detected:
-return HTTPResponse(status=409, body="Conflict detected")
-
-## Initialization
-
-To start the server block, use run().
-
-if **name** == '**main**':
-run(host='127.0.0.1', port=8080)
-
 EOF
 
 # 4. Execute the autonomous loop
@@ -120,14 +64,14 @@ EOF
 # watcher is only started by the interactive loop, and --message-file calls
 # coder.run(with_message=...) which runs one exchange and returns before that
 # loop is ever reached. Use ./watch_task.sh for that workflow instead.
-echo "Executing ai-aider for task 30..."
+echo "Executing ai-aider for task 40..."
 ai-aider \
   --yes \
   --auto-test \
   --no-auto-commits \
-  --test-cmd "pytest server/tests/test_sync.py" \
+  --test-cmd "npm run test -- client/tests/db.test.js" \
   --message-file TMP.prompt.txt \
-  server/sync.py server/tests/test_sync.py
+  client/src/db.js client/tests/db.test.js
 
 # 5. Independent Post-flight Verification
 #
@@ -144,7 +88,7 @@ echo "Aider exited. Running external verification audit..."
 VERIFY_OUT=$(mktemp)
 trap 'rm -f "$VERIFY_OUT"' EXIT
 
-if pytest server/tests/test_sync.py >"$VERIFY_OUT" 2>&1; then
+if npm run test -- client/tests/db.test.js >"$VERIFY_OUT" 2>&1; then
     cat "$VERIFY_OUT"
     echo "RESULT: Task passed verification."
     echo "Review the diff, commit it, then: ./next_task.py finish"

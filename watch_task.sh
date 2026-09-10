@@ -1,5 +1,5 @@
 #!/bin/sh
-# Interactive watch session for task 30: backend_sync
+# Interactive watch session for task 40: frontend_db
 #
 # Leave this running. In any watched file, write a comment ending in AI! and
 # save:
@@ -13,4 +13,4 @@
 exec ai-aider \
   --no-auto-commits \
   --watch-files \
-  server/sync.py server/tests/test_sync.py
+  client/src/db.js client/tests/db.test.js
