@@ -30,23 +30,23 @@ if ! command -v pytest >/dev/null 2>&1; then
 fi
 
 # 2. Pre-create and track target files to restrict scope
-for file in server/cas.py server/tests/test_cas.py; do
+for file in server/sync.py server/tests/test_sync.py; do
     mkdir -p "$(dirname "$file")"
     touch "$file"
 done
-git add server/cas.py server/tests/test_cas.py
+git add server/sync.py server/tests/test_sync.py
 
 # 3. Generate the prompt
 cat << 'EOF' > TMP.prompt.txt
-# Task: backend_cas (ID: 20)
+# Task: backend_sync (ID: 30)
 
 ## Objective
-Implement Content-Addressable Storage for media blobs
+Implement LWW synchronization endpoints
 
 ## Acceptance Criteria
-- Save blobs addressed by SHA-256 digest
-- Serve immutable binary payloads independent of JSON entities
-- Isolate transport from relational sync
+- Accept JSON push for Events/Tunes
+- Resolve conflicts via unconditional Last-Write-Wins using updated_at
+- Process deleted_at tombstones
 
 ## Execution Rules
 Execute the objective to meet all acceptance criteria.
@@ -64,14 +64,14 @@ EOF
 # watcher is only started by the interactive loop, and --message-file calls
 # coder.run(with_message=...) which runs one exchange and returns before that
 # loop is ever reached. Use ./watch_task.sh for that workflow instead.
-echo "Executing ai-aider for task 20..."
+echo "Executing ai-aider for task 30..."
 ai-aider \
   --yes \
   --auto-test \
   --no-auto-commits \
-  --test-cmd "pytest server/tests/test_cas.py" \
+  --test-cmd "pytest server/tests/test_sync.py" \
   --message-file TMP.prompt.txt \
-  server/cas.py server/tests/test_cas.py
+  server/sync.py server/tests/test_sync.py
 
 # 5. Independent Post-flight Verification
 #
@@ -88,7 +88,7 @@ echo "Aider exited. Running external verification audit..."
 VERIFY_OUT=$(mktemp)
 trap 'rm -f "$VERIFY_OUT"' EXIT
 
-if pytest server/tests/test_cas.py >"$VERIFY_OUT" 2>&1; then
+if pytest server/tests/test_sync.py >"$VERIFY_OUT" 2>&1; then
     cat "$VERIFY_OUT"
     echo "RESULT: Task passed verification."
     echo "Review the diff, commit it, then: ./next_task.py finish"
