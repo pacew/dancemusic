@@ -13,7 +13,7 @@ import subprocess
 import sys
 
 TASKS = 'tasks.csv'
-CURRENT = 'CURRENT-TASK'
+CURRENT = 'TMP.CURRENT-TASK'
 DONE = 'done'
 
 
