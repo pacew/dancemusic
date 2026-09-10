@@ -2,7 +2,7 @@
 """Pick the next task, prepare its runner scripts, and mark it done.
 
     next_task.py            list tasks whose dependencies are all done
-    next_task.py 20         prepare TMP.run, TMP.interactive and CURRENT-TASK
+    next_task.py 20         prepare TMP.run, TMP.interactive, TMP.test and CURRENT-TASK
     next_task.py finish     mark the task named in CURRENT-TASK done, then list
 
 State lives in tasks.csv, in a `done` column holding "" or "y". 
@@ -13,7 +13,7 @@ import subprocess
 import sys
 
 TASKS = 'tasks.csv'
-CURRENT = 'TMP.CURRENT-TASK'
+CURRENT = 'CURRENT-TASK'
 DONE = 'done'
 
 
@@ -205,10 +205,10 @@ exit 1
 
     # 4. Create TMP.interactive
     interactive_msg = (
-        "This is an interactive session to continue the works described in "
-        "./TMP.prompt. Any dirty files in the directory are "
-        "work-in-progress toward that goal. "
-        "Await my further instructions."
+        "This is an interactive session following up on a failed attempt to accomplish "
+        "what is specified in TMP.prompt. Any dirty files in the directory are "
+        "work-in-progress toward that goal. Please review the current state and "
+        "await my instructions."
     )
     
     watch_content = f"""#!/bin/bash
@@ -228,7 +228,14 @@ exec ai-aider \\
   {target_files_str}
 """
 
-    for name, content in (('TMP.run', run_content), ('TMP.interactive', watch_content)):
+    # 5. Create TMP.test
+    test_content = f"""#!/bin/bash
+# Manual verification for task {row['id']}: {row['title']}
+
+{verify_cmd}
+"""
+
+    for name, content in (('TMP.run', run_content), ('TMP.interactive', watch_content), ('TMP.test', test_content)):
         with open(name, 'w', encoding='utf-8') as f:
             f.write(content)
         os.chmod(name, 0o755)
@@ -236,7 +243,7 @@ exec ai-aider \\
     with open(CURRENT, 'w', encoding='utf-8') as f:
         f.write(f"{row['id']} {row['title']}\n")
 
-    # 5. Gitignore updates (including the new backend/data requirement from ARCHITECTURE.md)
+    # 6. Gitignore updates
     ignore_patterns = ['TMP.*', '__pycache__/', '*.pyc', 'node_modules/', 'backend/data/', '.aider*']
     existing = ''
     if os.path.exists('.gitignore'):
@@ -250,7 +257,7 @@ exec ai-aider \\
     print(f"Task {row['id']}: {row['title']}")
     print(f"  targets   {target_files_str}")
     print(f"  verify    {verify_cmd}")
-    print(f"  wrote     TMP.run, TMP.interactive, TMP.prompt, {CURRENT}")
+    print(f"  wrote     TMP.run, TMP.interactive, TMP.test, TMP.prompt, {CURRENT}")
     print("\nNext step: ./TMP.run")
 
 
