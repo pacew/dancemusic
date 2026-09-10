@@ -205,10 +205,10 @@ exit 1
 
     # 4. Create TMP.interactive
     interactive_msg = (
-        "This is an interactive session following up on a failed attempt to accomplish "
-        "what is specified in TMP.prompt. Any dirty files in the directory are "
-        "work-in-progress toward that goal. Please review the current state and "
-        "await my instructions."
+        "This is an interactive session to continue the works described in "
+        "./TMP.prompt. Any dirty files in the directory are "
+        "work-in-progress toward that goal. "
+        "Await my further instructions."
     )
     
     watch_content = f"""#!/bin/bash
@@ -225,8 +225,6 @@ fi
 exec ai-aider \\
   --no-auto-commits \\
   --watch-files \\
-  --message "{interactive_msg}" \\
-  --message-file TMP.prompt \\
   {target_files_str}
 """
 
