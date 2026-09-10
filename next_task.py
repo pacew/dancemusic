@@ -258,7 +258,11 @@ echo "Aider exited. Running external verification audit..."
 VERIFY_OUT=$(mktemp)
 trap 'rm -f "$VERIFY_OUT"' EXIT
 
-if {verify_cmd} >"$VERIFY_OUT" 2>&1; then
+# Through sh -c, because verification_cmd may be a compound command. With a
+# bare `if a && b >FILE`, the redirection binds only to b, so the first half's
+# output -- including any npm install failure -- escapes to the terminal and is
+# invisible to the BLOCKED check below.
+if sh -c "{verify_cmd}" >"$VERIFY_OUT" 2>&1; then
     cat "$VERIFY_OUT"
     echo "RESULT: Task passed verification."
     echo "Review the diff, commit it, then: ./next_task.py finish"
@@ -326,7 +330,11 @@ exec ai-aider \\
     # refuses to start when the tree is dirty -- and __pycache__ appears the
     # moment anything imports the code, which would block every run after the
     # first for a reason that has nothing to do with the task.
-    ignore_patterns = ['TMP.prompt.txt', '__pycache__/', '*.pyc']
+    # node_modules/ matters as much as the others now: run_task.sh refuses to
+    # start on a dirty tree, and an npm install drops tens of thousands of
+    # untracked files that would block every task from here on.
+    ignore_patterns = ['TMP.prompt.txt', '__pycache__/', '*.pyc',
+                       'node_modules/']
     existing = ''
     if os.path.exists('.gitignore'):
         with open('.gitignore', encoding='utf-8') as f:

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Interactive watch session for task 40: frontend_db
+# Interactive watch session for task 35: frontend_scaffold
 #
 # Leave this running. In any watched file, write a comment ending in AI! and
 # save:
@@ -13,4 +13,4 @@
 exec ai-aider \
   --no-auto-commits \
   --watch-files \
-  client/src/db.js client/tests/db.test.js
+  package.json vitest.config.js client/tests/scaffold.test.js

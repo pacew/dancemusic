@@ -30,23 +30,24 @@ if ! command -v npm >/dev/null 2>&1; then
 fi
 
 # 2. Pre-create and track target files to restrict scope
-for file in client/src/db.js client/tests/db.test.js; do
+for file in package.json vitest.config.js client/tests/scaffold.test.js; do
     mkdir -p "$(dirname "$file")"
     touch "$file"
 done
-git add client/src/db.js client/tests/db.test.js
+git add package.json vitest.config.js client/tests/scaffold.test.js
 
 # 3. Generate the prompt
 cat << 'EOF' > TMP.prompt.txt
-# Task: frontend_db (ID: 40)
+# Task: frontend_scaffold (ID: 35)
 
 ## Objective
-Initialize offline-first IndexedDB schema
+Stand up the frontend test harness that every later client task is verified by
 
 ## Acceptance Criteria
-- Create Events table matching PRD schema
-- Create Tunes table with transform_data and annotation_data
-- Enforce <1000 record constraint logic
+- package.json defines a test script that runs vitest
+- vitest.config.js sets the jsdom environment and enables JSX so .jsx test files run
+- client/tests/scaffold.test.js contains one trivial passing test proving the runner works
+- Dependencies are declared in package.json rather than installed globally
 
 ## Execution Rules
 Execute the objective to meet all acceptance criteria.
@@ -64,14 +65,14 @@ EOF
 # watcher is only started by the interactive loop, and --message-file calls
 # coder.run(with_message=...) which runs one exchange and returns before that
 # loop is ever reached. Use ./watch_task.sh for that workflow instead.
-echo "Executing ai-aider for task 40..."
+echo "Executing ai-aider for task 35..."
 ai-aider \
   --yes \
   --auto-test \
   --no-auto-commits \
-  --test-cmd "npm run test -- client/tests/db.test.js" \
+  --test-cmd "npm install && npm run test -- client/tests/scaffold.test.js" \
   --message-file TMP.prompt.txt \
-  client/src/db.js client/tests/db.test.js
+  package.json vitest.config.js client/tests/scaffold.test.js
 
 # 5. Independent Post-flight Verification
 #
@@ -88,7 +89,11 @@ echo "Aider exited. Running external verification audit..."
 VERIFY_OUT=$(mktemp)
 trap 'rm -f "$VERIFY_OUT"' EXIT
 
-if npm run test -- client/tests/db.test.js >"$VERIFY_OUT" 2>&1; then
+# Through sh -c, because verification_cmd may be a compound command. With a
+# bare `if a && b >FILE`, the redirection binds only to b, so the first half's
+# output -- including any npm install failure -- escapes to the terminal and is
+# invisible to the BLOCKED check below.
+if sh -c "npm install && npm run test -- client/tests/scaffold.test.js" >"$VERIFY_OUT" 2>&1; then
     cat "$VERIFY_OUT"
     echo "RESULT: Task passed verification."
     echo "Review the diff, commit it, then: ./next_task.py finish"

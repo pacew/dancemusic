@@ -54,3 +54,34 @@ Media blobs are immutable binary payloads decoupled from lightweight relational 
 * **Topology:** Authenticated sync to a self-hosted web backend supporting multiple devices per account[cite: 2].
 * **Conflict Resolution:** Unconditional Last-Write-Wins (LWW) at the entity level utilizing `updated_at` timestamps and `deleted_at` tombstones[cite: 2].
 * **Exclusions:** Delta-based sync conflict resolution and backend database backups are explicitly out of scope[cite: 2].
+
+## 6. Project Directory Layout & Technology Stack
+
+### 6.1 Stack
+* **Backend:** Python 3.11+, FastAPI, SQLite. Minimal dependencies.
+* **Frontend:** Preact, JSX, HTML5, CSS3. IndexedDB wrapper (Dexie.js). PDF.js for ingestion.
+
+### 6.2 Directory Structure
+/
+├── backend/
+│   ├── app/
+│   │   ├── main.py          # FastAPI entry point
+│   │   ├── models.py        # SQLite schemas / Pydantic models
+│   │   ├── sync.py          # LWW sync logic
+│   │   └── cas.py           # Content-addressable storage logic
+│   ├── data/                # SQLite DB and Media files
+│   └── requirements.txt
+├── frontend/
+│   ├── package.json
+│   ├── index.html
+│   ├── vite.config.js       # Preact compilation
+│   ├── src/
+│   │   ├── app.jsx          # Init & Routing
+│   │   ├── db.js            # IndexedDB schema & access
+│   │   ├── sync.js          # Client-side sync client
+│   │   ├── EventView.jsx
+│   │   ├── PerformanceView.jsx
+│   │   ├── AnnotationEngine.js # Canvas draw/lasso logic
+│   │   └── ingest.js        # PDF/ABC parsing & CAS hashing
+│   └── tests/
+└── ARCHITECTURE.md
