@@ -1,5 +1,5 @@
 #!/bin/sh
-# Interactive watch session for task 010: backend_schema
+# Interactive watch session for task 20: backend_cas
 #
 # Leave this running. In any watched file, write a comment ending in AI! and
 # save:
@@ -13,4 +13,4 @@
 exec ai-aider \
   --no-auto-commits \
   --watch-files \
-  server/db.py server/tests/test_db.py
+  server/cas.py server/tests/test_cas.py

@@ -30,23 +30,23 @@ if ! command -v pytest >/dev/null 2>&1; then
 fi
 
 # 2. Pre-create and track target files to restrict scope
-for file in server/db.py server/tests/test_db.py; do
+for file in server/cas.py server/tests/test_cas.py; do
     mkdir -p "$(dirname "$file")"
     touch "$file"
 done
-git add server/db.py server/tests/test_db.py
+git add server/cas.py server/tests/test_cas.py
 
 # 3. Generate the prompt
 cat << 'EOF' > TMP.prompt.txt
-# Task: backend_schema (ID: 010)
+# Task: backend_cas (ID: 20)
 
 ## Objective
-Initialize SQLite schema for Events and Tunes
+Implement Content-Addressable Storage for media blobs
 
 ## Acceptance Criteria
-- Event schema uses UUID for setlists 1:1
-- Tune schema implements CAS SHA-256 media_hash
-- Both tables implement updated_at and deleted_at tombstones
+- Save blobs addressed by SHA-256 digest
+- Serve immutable binary payloads independent of JSON entities
+- Isolate transport from relational sync
 
 ## Execution Rules
 Execute the objective to meet all acceptance criteria.
@@ -64,14 +64,14 @@ EOF
 # watcher is only started by the interactive loop, and --message-file calls
 # coder.run(with_message=...) which runs one exchange and returns before that
 # loop is ever reached. Use ./watch_task.sh for that workflow instead.
-echo "Executing ai-aider for task 010..."
+echo "Executing ai-aider for task 20..."
 ai-aider \
   --yes \
   --auto-test \
   --no-auto-commits \
-  --test-cmd "pytest server/tests/test_db.py" \
+  --test-cmd "pytest server/tests/test_cas.py" \
   --message-file TMP.prompt.txt \
-  server/db.py server/tests/test_db.py
+  server/cas.py server/tests/test_cas.py
 
 # 5. Independent Post-flight Verification
 #
@@ -88,9 +88,10 @@ echo "Aider exited. Running external verification audit..."
 VERIFY_OUT=$(mktemp)
 trap 'rm -f "$VERIFY_OUT"' EXIT
 
-if pytest server/tests/test_db.py >"$VERIFY_OUT" 2>&1; then
+if pytest server/tests/test_cas.py >"$VERIFY_OUT" 2>&1; then
     cat "$VERIFY_OUT"
     echo "RESULT: Task passed verification."
+    echo "Review the diff, commit it, then: ./next_task.py finish"
     exit 0
 fi
 
