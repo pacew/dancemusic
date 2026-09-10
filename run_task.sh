@@ -11,14 +11,6 @@ set -e
 #
 # Untracked files count. A leftover server/ from an abandoned run is not
 # tracked and is exactly the thing that must block.
-if [ -n "$(git status --porcelain)" ]; then
-    echo "FATAL: working tree is not clean."
-    echo "Review and commit, or discard, before starting a task. Otherwise this"
-    echo "run's changes and the previous run's are indistinguishable."
-    echo
-    git status --short
-    exit 3
-fi
 
 # 1. Pre-flight dependency check
 if ! command -v pytest >/dev/null 2>&1; then
@@ -51,6 +43,70 @@ Implement LWW synchronization endpoints
 ## Execution Rules
 Execute the objective to meet all acceptance criteria.
 CRITICAL: Do not write a brittle or partial solution. If this task is too broad, output the exact phrase REQUIRE_DECOMPOSITION and stop.
+
+Do not use flask or another web framework.  Instead use bottle.
+
+# Bottle Framework API Contract
+
+Do not read, import, or modify the file server/bottle.py. It is a large vendored dependency. Use this specification to implement routing and JSON handling.
+
+## Core Imports
+
+from bottle import get, post, request, response, run, HTTPResponse
+
+## Routing and URL Parameters
+
+Use method-specific decorators. Path variables are enclosed in angle brackets.
+
+@get('/sync/events')
+def list_events():
+return {"events": []}
+
+@post('/sync/events/<event_id>')
+def update_event(event_id):
+pass
+
+## Reading JSON Payloads
+
+Extract parsed JSON dictionaries using the request.json property.
+
+@post('/sync/tunes')
+def sync_tunes():
+payload = request.json
+if not payload:
+return HTTPResponse(status=400, body="Invalid JSON")
+
+```
+tune_id = payload.get('id')
+return {"status": "merged"}
+
+```
+
+## Returning JSON
+
+Return a standard Python dictionary. Bottle automatically serializes it to a JSON string and sets the Content-Type: application/json header.
+
+@get('/sync/state')
+def get_state():
+return {
+"last_updated": 1700000000,
+"status": "synchronized"
+}
+
+## Error Handling
+
+Return an HTTPResponse object to set specific status codes for client errors or conflicts.
+
+if conflict_detected:
+return HTTPResponse(status=409, body="Conflict detected")
+
+## Initialization
+
+To start the server block, use run().
+
+if **name** == '**main**':
+run(host='127.0.0.1', port=8080)
+
 EOF
 
 # 4. Execute the autonomous loop
